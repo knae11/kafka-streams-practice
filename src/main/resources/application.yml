@@ -1,0 +1,68 @@
+spring:
+  kafka:
+    # https://docs.spring.io/spring-cloud-stream-binder-kafka/docs/3.2.1/reference/html/spring-cloud-stream-binder-kafka.html#_setting_up_bootstrap_server_configuration
+    bootstrap-servers: http://localhost:9092
+    producer:
+      acks: 1
+      batch-size: 1000000
+      key-serializer: org.springframework.kafka.support.serializer.StringOrBytesSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        linger.ms: 100
+    consumer:
+      auto-offset-reset: latest
+
+  # https://docs.spring.io/spring-cloud-stream-binder-kafka/docs/3.2.1/reference/html/spring-cloud-stream-binder-kafka.html#_programming_model
+  cloud:
+    stream:
+      function:
+        definition: deliveryCountAggregator;deliveryTracker;deliveryTimeElapsedTracker;deliveryStatusCountRankAggregator;windowedDeliveryCountAggregator
+      bindings:
+        deliveryCountAggregator-in-0:
+          destination: delivery
+        deliveryTracker-in-0:
+          destination: delivery
+        deliveryTimeElapsedTracker-in-0:
+          destination: delivery
+        deliveryStatusCountRankAggregator-in-0:
+          destination: delivery
+        windowedDeliveryCountAggregator-in-0:
+          destination: delivery
+      kafka:
+        streams:
+          binder:
+            functions:
+              deliveryCountAggregator:
+                applicationId: deliveryCountAggregator
+              deliveryTracker:
+                applicationId: deliveryTracker
+              deliveryTimeElapsedTracker:
+                applicationId: deliveryTimeElapsedTracker
+              deliveryStatusCountRankAggregator:
+                applicationId: deliveryStatusCountRankAggregator
+              windowedDeliveryCountAggregator:
+                applicationId: windowedDeliveryCountAggregator
+            configuration:
+              num.stream.threads: 4
+              replication.factor: 1
+              default:
+                key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+                value.serde: org.springframework.kafka.support.serializer.JsonSerde
+              # https://docs.spring.io/spring-cloud-stream-binder-kafka/docs/3.2.1/reference/html/spring-cloud-stream-binder-kafka.html#_error_handling
+            deserialization-exception-handler: logandfail
+          bindings:
+            deliveryCountAggregator-in-0:
+              consumer:
+                valueSerde: com.example.deliverystreamssample.application.serde.DeliveryEventSerde
+            deliveryTracker-in-0:
+              consumer:
+                valueSerde: com.example.deliverystreamssample.application.serde.DeliveryEventSerde
+            deliveryTimeElapsedTracker-in-0:
+              consumer:
+                valueSerde: com.example.deliverystreamssample.application.serde.DeliveryEventSerde
+            deliveryStatusCountRankAggregator-in-0:
+              consumer:
+                valueSerde: com.example.deliverystreamssample.application.serde.DeliveryEventSerde
+            windowedDeliveryCountAggregator-in-0:
+              consumer:
+                valueSerde: com.example.deliverystreamssample.application.serde.DeliveryEventSerde
