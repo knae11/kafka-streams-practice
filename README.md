@@ -9,9 +9,11 @@ DeliveryState:
     COMPLETE_DELIVERY
     
 District:
-    - 송파(111)
-    - 강남(112)
-    - 강동(113)
+    - SONG_PA(111)
+    - GANG_NAM(112)
+    - GANG_DONG(113)
 ```
-- [ ] 지역별 배차대기(WAIT_ALLOCATE) 상태의 배달 갯수 조회
-- [ ] 지역별 배달되지 않은(COMPLETE_DELIVERY가 아닌) 배달 갯수 조회
+- 초기 셋팅은 배차대기 상태로 송파10, 강남7, 강동3 개의 배달을 만든다.
+
+---
+- [x] 지역별 각 배달 상태의 배달 갯수 조회
