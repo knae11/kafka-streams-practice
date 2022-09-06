@@ -44,7 +44,7 @@ public class DeliveryAggregatorConfiguration {
                     .reduce(DeliveryAggregatorConfiguration::latest, Materialized.<String, DeliveryEvent, KeyValueStore<Bytes, byte[]>>as(STORE_LATEST_DELIVERY)
                             .withKeySerde(Serdes.String())
                             .withValueSerde(deliveryEventSerde)
-                            .withRetention(Duration.ofMinutes(1)));
+                            .withRetention(Duration.ofMinutes(10)));
 
             latestDeliveryEvent.groupBy(((key, value) -> KeyValue.pair(
                                     DistrictDeliveryStateCondition.of(
@@ -57,7 +57,7 @@ public class DeliveryAggregatorConfiguration {
                     .count(Materialized.<DistrictDeliveryStateCondition, Long, KeyValueStore<Bytes, byte[]>>as(STORE_COUNT_PER_DELIVERY_DISTRICT)
                             .withKeySerde(deliveryStateConditionSerde)
                             .withValueSerde(Serdes.Long())
-                            .withRetention(Duration.ofMinutes(1))
+                            .withRetention(Duration.ofMinutes(10))
                     );
         };
     }
