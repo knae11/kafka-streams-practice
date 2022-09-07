@@ -43,5 +43,9 @@ Content-Type: application/json
 }
 
 ###
-GET {{host}}/v1/api/deliveries/count?localDate=2022-09-05&deliveryDistrict=SONG_PA&deliveryState=COMPLETE_DELIVERY
+GET {{host}}/v1/api/deliveries/count?localDate=2022-09-06&deliveryDistrict=SONG_PA&deliveryState=COMPLETE_DELIVERY
+Content-Type: application/json
+
+###
+GET {{host}}/v1/api/deliveries/count/state?localDate=2022-09-07&deliveryState=WAIT_ALLOCATE
 Content-Type: application/json

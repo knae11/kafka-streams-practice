@@ -2,6 +2,7 @@ package com.deliverystreams.application;
 
 import com.deliverystreams.application.serde.DeliveryEventSerde;
 import com.deliverystreams.domain.DeliveryEvent;
+import com.deliverystreams.domain.DeliveryStateCondition;
 import com.deliverystreams.domain.DistrictDeliveryStateCondition;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,9 +31,11 @@ import java.util.function.Consumer;
 public class DeliveryAggregatorConfiguration {
     private static final String STORE_LATEST_DELIVERY = "store-latest-delivery";
     private static final String STORE_COUNT_PER_DELIVERY_DISTRICT = "store-count-per-delivery-district";
+    private static final String STORE_COUNT_PER_DELIVERY_STATE = "store-count-per-delivery-state";
 
     private final JsonSerde<DeliveryEvent> deliveryEventSerde = new DeliveryEventSerde();
-    private static final JsonSerde<DistrictDeliveryStateCondition> deliveryStateConditionSerde = new JsonSerde<>(DistrictDeliveryStateCondition.class);
+    private static final JsonSerde<DistrictDeliveryStateCondition> districtDeliveryStateConditionSerde = new JsonSerde<>(DistrictDeliveryStateCondition.class);
+    private static final JsonSerde<DeliveryStateCondition> deliveryStateConditionSerde = new JsonSerde<>(DeliveryStateCondition.class);
 
     private final InteractiveQueryService interactiveQueryService;
 
@@ -52,9 +55,22 @@ public class DeliveryAggregatorConfiguration {
                                             value.getDeliveryDistrict(),
                                             value.getDeliveryState()
                                     ), value.getId())),
-                            Grouped.with(deliveryStateConditionSerde, Serdes.String()
+                            Grouped.with(districtDeliveryStateConditionSerde, Serdes.String()
                             ))
                     .count(Materialized.<DistrictDeliveryStateCondition, Long, KeyValueStore<Bytes, byte[]>>as(STORE_COUNT_PER_DELIVERY_DISTRICT)
+                            .withKeySerde(districtDeliveryStateConditionSerde)
+                            .withValueSerde(Serdes.Long())
+                            .withRetention(Duration.ofMinutes(10))
+                    );
+
+            latestDeliveryEvent.groupBy(((key, value) -> KeyValue.pair(
+                                    DeliveryStateCondition.of(
+                                            value.getOccurredDateTime().toLocalDate(),
+                                            value.getDeliveryState()
+                                    ), value.getId())),
+                            Grouped.with(deliveryStateConditionSerde, Serdes.String()
+                            ))
+                    .count(Materialized.<DeliveryStateCondition, Long, KeyValueStore<Bytes, byte[]>>as(STORE_COUNT_PER_DELIVERY_STATE)
                             .withKeySerde(deliveryStateConditionSerde)
                             .withValueSerde(Serdes.Long())
                             .withRetention(Duration.ofMinutes(10))
@@ -74,9 +90,21 @@ public class DeliveryAggregatorConfiguration {
 
     }
 
-    public Optional<ReadOnlyKeyValueStore<DistrictDeliveryStateCondition, Long>> getCountPerStateStore() {
+    public Optional<ReadOnlyKeyValueStore<DistrictDeliveryStateCondition, Long>> getCountPerDistrict() {
         try {
             return Optional.of(interactiveQueryService.getQueryableStore(STORE_COUNT_PER_DELIVERY_DISTRICT, QueryableStoreTypes.keyValueStore()));
+        } catch (Exception e) {
+            /**
+             * StreamProcessor가 실행되는 동안(재배포 또는 재시작)에는 StateStore를 조회할 수 없다.
+             */
+            log.warn("State Store를 찾을 수 없습니다.", e);
+            return Optional.empty();
+        }
+    }
+
+    public Optional<ReadOnlyKeyValueStore<DeliveryStateCondition, Long>> getCountPerState() {
+        try {
+            return Optional.of(interactiveQueryService.getQueryableStore(STORE_COUNT_PER_DELIVERY_STATE, QueryableStoreTypes.keyValueStore()));
         } catch (Exception e) {
             /**
              * StreamProcessor가 실행되는 동안(재배포 또는 재시작)에는 StateStore를 조회할 수 없다.

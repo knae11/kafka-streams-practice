@@ -66,6 +66,11 @@ public class DeliveryController {
         return deliveryFinder.getCount(localDate, deliveryDistrict, deliveryState);
     }
 
+    @GetMapping("/count/state")
+    public Long getCountState(@RequestParam LocalDate localDate, @RequestParam DeliveryState deliveryState) {
+        return deliveryFinder.getCount(localDate, deliveryState);
+    }
+
     @NoArgsConstructor
     @Getter
     static class ActionRequest {

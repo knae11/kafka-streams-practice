@@ -15,6 +15,7 @@ District:
 ```
 - 초기 셋팅은 배차대기 상태로 송파10, 강남7, 강동3 개의 배달을 만든다.
 - [x] 지역별 각 배달 상태의 배달 갯수 조회
+- [x] 지역과 상관없이 각 배달 상태의 배달 갯수 조회
 
 ---
 [Spring cloud stream binder kafka](https://docs.spring.io/spring-cloud-stream-binder-kafka/docs/3.2.1/reference/html/spring-cloud-stream-binder-kafka.html#_programming_model)
