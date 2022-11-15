@@ -25,12 +25,12 @@ public class DeliveryFinder {
         return countPerStateStore.get().get(DistrictDeliveryStateCondition.of(localDate, deliveryDistrict, deliveryState));
     }
 
-    public Long getCount(LocalDate localDate,DeliveryState deliveryState) {
+    public Long getCountState(LocalDate localDate, DeliveryState deliveryState) {
         Optional<ReadOnlyKeyValueStore<DeliveryStateCondition, Long>> countPerStateStore = deliveryAggregatorConfiguration.getCountPerState();
         if (countPerStateStore.isEmpty()) {
             return null;
         }
 
-        return countPerStateStore.get().get(DeliveryStateCondition.of(localDate,  deliveryState));
+        return countPerStateStore.get().get(DeliveryStateCondition.of(localDate, deliveryState));
     }
 }

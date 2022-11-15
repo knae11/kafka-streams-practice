@@ -9,10 +9,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KeyValue;
+import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Grouped;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
+import org.apache.kafka.streams.kstream.Printed;
+import org.apache.kafka.streams.kstream.Reducer;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
@@ -21,7 +24,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
-import java.time.Duration;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -32,6 +34,7 @@ public class DeliveryAggregatorConfiguration {
     private static final String STORE_LATEST_DELIVERY = "store-latest-delivery";
     private static final String STORE_COUNT_PER_DELIVERY_DISTRICT = "store-count-per-delivery-district";
     private static final String STORE_COUNT_PER_DELIVERY_STATE = "store-count-per-delivery-state";
+    private static final String KTABLE_TO_PRINT = "delivery-ktable-to-print";
 
     private final JsonSerde<DeliveryEvent> deliveryEventSerde = new DeliveryEventSerde();
     private static final JsonSerde<DistrictDeliveryStateCondition> districtDeliveryStateConditionSerde = new JsonSerde<>(DistrictDeliveryStateCondition.class);
@@ -39,15 +42,30 @@ public class DeliveryAggregatorConfiguration {
 
     private final InteractiveQueryService interactiveQueryService;
 
+    private final StreamsBuilder builder = new StreamsBuilder();
+
     @Bean
     public Consumer<KStream<String, DeliveryEvent>> deliveryCountAggregator() {
         return input -> {
 
+            input.print(Printed.<String, DeliveryEvent>toSysOut()
+                    .withLabel("DELIVERY-KStream"));
+
+            KTable<String, DeliveryEvent> table = input.groupByKey()
+                    .reduce(new Reducer<DeliveryEvent>() {
+                        @Override
+                        public DeliveryEvent apply(DeliveryEvent value1, DeliveryEvent value2) {
+                            return value2;
+                        }
+                    }, Materialized.as(KTABLE_TO_PRINT));
+            table.toStream()
+                    .print(Printed.<String, DeliveryEvent>toSysOut()
+                            .withLabel("DELIVERY-KTable"));
+
             KTable<String, DeliveryEvent> latestDeliveryEvent = input.groupByKey(Grouped.with(Serdes.String(), deliveryEventSerde))
                     .reduce(DeliveryAggregatorConfiguration::latest, Materialized.<String, DeliveryEvent, KeyValueStore<Bytes, byte[]>>as(STORE_LATEST_DELIVERY)
                             .withKeySerde(Serdes.String())
-                            .withValueSerde(deliveryEventSerde)
-                            .withRetention(Duration.ofMinutes(10)));
+                            .withValueSerde(deliveryEventSerde));
 
             latestDeliveryEvent.groupBy(((key, value) -> KeyValue.pair(
                                     DistrictDeliveryStateCondition.of(
@@ -59,9 +77,7 @@ public class DeliveryAggregatorConfiguration {
                             ))
                     .count(Materialized.<DistrictDeliveryStateCondition, Long, KeyValueStore<Bytes, byte[]>>as(STORE_COUNT_PER_DELIVERY_DISTRICT)
                             .withKeySerde(districtDeliveryStateConditionSerde)
-                            .withValueSerde(Serdes.Long())
-                            .withRetention(Duration.ofMinutes(10))
-                    );
+                            .withValueSerde(Serdes.Long()));
 
             latestDeliveryEvent.groupBy(((key, value) -> KeyValue.pair(
                                     DeliveryStateCondition.of(
@@ -72,9 +88,7 @@ public class DeliveryAggregatorConfiguration {
                             ))
                     .count(Materialized.<DeliveryStateCondition, Long, KeyValueStore<Bytes, byte[]>>as(STORE_COUNT_PER_DELIVERY_STATE)
                             .withKeySerde(deliveryStateConditionSerde)
-                            .withValueSerde(Serdes.Long())
-                            .withRetention(Duration.ofMinutes(10))
-                    );
+                            .withValueSerde(Serdes.Long()));
         };
     }
 

@@ -37,6 +37,7 @@ public class DeliveryController {
             ActionRequest request = new ActionRequest(String.valueOf(i), "WAIT_ALLOCATE", "SONG_PA");
             DeliveryEvent event = new DeliveryEvent(request.getId(), DeliveryState.valueOf(request.getDeliveryState()), now.minusSeconds(i), District.valueOf(request.getDeliveryDistrict()));
             kafkaTemplate.send("delivery", event.getId(), event).get();
+            kafkaTemplate.send("delivery", event.getId(), event).get();
         }
 
         // 112 지역 7개
@@ -68,7 +69,7 @@ public class DeliveryController {
 
     @GetMapping("/count/state")
     public Long getCountState(@RequestParam LocalDate localDate, @RequestParam DeliveryState deliveryState) {
-        return deliveryFinder.getCount(localDate, deliveryState);
+        return deliveryFinder.getCountState(localDate, deliveryState);
     }
 
     @NoArgsConstructor

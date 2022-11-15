@@ -7,7 +7,7 @@ POST {{host}}/v1/api/deliveries/action
 Content-Type: application/json
 
 {
-  "id": "6",
+  "id": "1001",
   "deliveryState": "WAIT_ALLOCATE",
   "deliveryDistrict": "SONG_PA"
 }
@@ -17,7 +17,7 @@ POST {{host}}/v1/api/deliveries/action
 Content-Type: application/json
 
 {
-  "id": "6",
+  "id": "1001",
   "deliveryState": "COMPLETE_ALLOCATE",
   "deliveryDistrict": "SONG_PA"
 }
@@ -27,7 +27,7 @@ POST {{host}}/v1/api/deliveries/action
 Content-Type: application/json
 
 {
-  "id": "6",
+  "id": "1001",
   "deliveryState": "COMPLETE_PICKUP",
   "deliveryDistrict": "SONG_PA"
 }
@@ -43,9 +43,9 @@ Content-Type: application/json
 }
 
 ###
-GET {{host}}/v1/api/deliveries/count?localDate=2022-09-06&deliveryDistrict=SONG_PA&deliveryState=COMPLETE_DELIVERY
+GET {{host}}/v1/api/deliveries/count?localDate=2022-11-15&deliveryDistrict=SONG_PA&deliveryState=COMPLETE_DELIVERY
 Content-Type: application/json
 
 ###
-GET {{host}}/v1/api/deliveries/count/state?localDate=2022-09-07&deliveryState=WAIT_ALLOCATE
+GET {{host}}/v1/api/deliveries/count/state?localDate=2022-11-15&deliveryState=WAIT_ALLOCATE
 Content-Type: application/json
