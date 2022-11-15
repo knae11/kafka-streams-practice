@@ -50,7 +50,7 @@ public class DeliveryAggregatorConfiguration {
 
             input.print(Printed.<String, DeliveryEvent>toSysOut()
                     .withLabel("DELIVERY-KStream"));
-
+            // https://stackoverflow.com/questions/42937057/kafka-streams-api-kstream-to-ktable
             KTable<String, DeliveryEvent> table = input.groupByKey()
                     .reduce(new Reducer<DeliveryEvent>() {
                         @Override
