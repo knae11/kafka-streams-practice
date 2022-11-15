@@ -29,6 +29,7 @@ spring:
             configuration:
               num.stream.threads: 4
               replication.factor: 1
+#              cache.max.bytes.buffering: 0
               default:
                 key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
                 value.serde: org.springframework.kafka.support.serializer.JsonSerde
