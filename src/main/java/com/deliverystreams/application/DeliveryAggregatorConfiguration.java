@@ -3,13 +3,13 @@ package com.deliverystreams.application;
 import com.deliverystreams.application.serde.DeliveryEventSerde;
 import com.deliverystreams.domain.DeliveryEvent;
 import com.deliverystreams.domain.DeliveryStateCondition;
+import com.deliverystreams.domain.DistrictCondition;
 import com.deliverystreams.domain.DistrictDeliveryStateCondition;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KeyValue;
-import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.kstream.Grouped;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.support.serializer.JsonSerde;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -35,14 +36,14 @@ public class DeliveryAggregatorConfiguration {
     private static final String STORE_COUNT_PER_DELIVERY_DISTRICT = "store-count-per-delivery-district";
     private static final String STORE_COUNT_PER_DELIVERY_STATE = "store-count-per-delivery-state";
     private static final String KTABLE_TO_PRINT = "delivery-ktable-to-print";
+    private static final String STORE_TOP_RANKED_DISTRICT = "store-queue-count-per-delivery-district";
 
     private final JsonSerde<DeliveryEvent> deliveryEventSerde = new DeliveryEventSerde();
     private static final JsonSerde<DistrictDeliveryStateCondition> districtDeliveryStateConditionSerde = new JsonSerde<>(DistrictDeliveryStateCondition.class);
     private static final JsonSerde<DeliveryStateCondition> deliveryStateConditionSerde = new JsonSerde<>(DeliveryStateCondition.class);
+    private static final JsonSerde<DistrictCondition> districtConditionSerde = new JsonSerde<>(DistrictCondition.class);
 
     private final InteractiveQueryService interactiveQueryService;
-
-    private final StreamsBuilder builder = new StreamsBuilder();
 
     @Bean
     public Consumer<KStream<String, DeliveryEvent>> deliveryCountAggregator() {
@@ -88,7 +89,22 @@ public class DeliveryAggregatorConfiguration {
                             ))
                     .count(Materialized.<DeliveryStateCondition, Long, KeyValueStore<Bytes, byte[]>>as(STORE_COUNT_PER_DELIVERY_STATE)
                             .withKeySerde(deliveryStateConditionSerde)
-                            .withValueSerde(Serdes.Long()));
+                            .withValueSerde(Serdes.Long()))
+                    .toStream()
+                    .peek((k, v) -> log.info("[[PEEK DISTRICT STATE]] k: {}, v: {}", k, v));
+
+            latestDeliveryEvent.groupBy(((key, value) -> KeyValue.pair(
+                                    DistrictCondition.of(
+                                            value.getOccurredDateTime().toLocalDate(),
+                                            value.getDeliveryDistrict()
+                                    ), value.getId())),
+                            Grouped.with(districtConditionSerde, Serdes.String()
+                            ))
+                    .count(Materialized.<DistrictCondition, Long, KeyValueStore<Bytes, byte[]>>as(STORE_TOP_RANKED_DISTRICT)
+                            .withKeySerde(districtConditionSerde)
+                            .withValueSerde(Serdes.Long()))
+                    .toStream()
+                    .peek((k, v) -> log.info("[[PEEK DISTRICT]] k: {}, v: {}", k, v));
         };
     }
 

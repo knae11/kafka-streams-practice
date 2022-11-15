@@ -37,7 +37,6 @@ public class DeliveryController {
             ActionRequest request = new ActionRequest(String.valueOf(i), "WAIT_ALLOCATE", "SONG_PA");
             DeliveryEvent event = new DeliveryEvent(request.getId(), DeliveryState.valueOf(request.getDeliveryState()), now.minusSeconds(i), District.valueOf(request.getDeliveryDistrict()));
             kafkaTemplate.send("delivery", event.getId(), event).get();
-            kafkaTemplate.send("delivery", event.getId(), event).get();
         }
 
         // 112 지역 7개
